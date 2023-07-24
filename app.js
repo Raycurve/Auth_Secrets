@@ -5,7 +5,8 @@ const ejs = require('ejs');
 const mongoose = require('mongoose');
 // const encrypt = require('mongoose-encryption');
 const app = express();
-const md5 = require('md5');
+// const md5 = require('md5');
+const bcrypt = require('bcrypt');
 require("dotenv").config();
 
 app.use(express.static("public"));
@@ -39,43 +40,49 @@ app.get("/register",(req,res)=>{
   res.render("register");
 })
 
+const saltRounds=10;
 app.post("/register",(req,res)=>{
   // console.log(req);
   const user = req.body.username;
-  const pass = md5(req.body.password);
-  const newU = new User({
-    username: user,
-    password: pass
-  })
-  newU.save()
-  .then(()=>{
-    //to do add a notif of registered succesfully
-    console.log("registered succesfully!");
-    res.redirect("/")
-  })
-  .catch((err)=>{
-    console.log(err);
-    res.redirect("/register")
+  bcrypt.hash(req.body.password,saltRounds,(err,hash)=>{
+    const pass = hash;
+    const newU = new User({
+      username: user,
+      password: pass
+    })
+    newU.save()
+    .then(()=>{
+      //to do add a notif of registered succesfully
+      console.log("registered succesfully!");
+      res.redirect("/")
+    })
+    .catch((err)=>{
+      console.log(err);
+      res.redirect("/register")
+    })
+
   })
 
 })
 
 app.post("/login",(req,res)=>{
   const user = req.body.username;
-  const pass = md5(req.body.password); 
+  const pass = req.body.password;
   User.findOne({username: user})
   .then((user)=>{
     if(user == null){
       console.log("user not found");
       res.redirect("/login");
     }
-    else if(user.password === pass){
-      res.render("secrets");
-    }
-    else{
-      console.log("wrong credentials!");
-      res.redirect("/login")
-    }
+    bcrypt.compare(pass, user.password, function(err, result) {
+      if(result === true){
+        res.render("secrets");
+      }
+      else{
+        console.log("wrong credentials!");
+        res.redirect("/login")
+      }
+    })
   })
   .catch((err)=>{
     console.log(err);
