@@ -62,7 +62,7 @@ app.post("/register",(req,res)=>{
 
 app.post("/login",(req,res)=>{
   const user = req.body.username;
-  const pass = md5(req.body.password);
+  const pass = md5(req.body.password); 
   User.findOne({username: user})
   .then((user)=>{
     if(user == null){
